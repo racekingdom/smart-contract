@@ -26,7 +26,7 @@ contract RaceKingdom is Context, IBEP20, Ownable, ReentrancyGuard {
 
   constructor() {
     _name = "Race Kingdom";
-    _symbol = "RKPO";
+    _symbol = "ATOZ";
     _decimals = 18;
     _totalSupply = 0;
     _balances[msg.sender] = _totalSupply;
@@ -209,7 +209,7 @@ contract RaceKingdom is Context, IBEP20, Ownable, ReentrancyGuard {
    */
   function _mint(address account, uint256 amount) internal {
     require(account != address(0), "BEP20: mint to the zero address");
-    require(_totalSupply.add(amount) <= MAX_SUPPLY, "This mint would exceed max supply of RKPOs");
+    require(_totalSupply.add(amount) <= MAX_SUPPLY, "This mint would exceed max supply of ATOZs");
 
     _totalSupply = _totalSupply.add(amount);
     _balances[account] = _balances[account].add(amount);

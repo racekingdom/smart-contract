@@ -1,6 +1,3 @@
-## Reace Kingdom 
-https://racekingdom.io/
-
 ## Install environment.
 
 Change **.env.example** to **.env** and add **PRIVATE_KEY** and **BSC_API_KEY**.
@@ -50,3 +47,4 @@ run deployment script.
 ```bash
 npm run deployMainnet
 ```
+
