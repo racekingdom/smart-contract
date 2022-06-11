@@ -1,0 +1,16 @@
+
+Deployer_Primary_key={private_key}
+
+Provider=wss://rinkeby.infura.io/ws/v3/{projectId}
+
+Etherscan_Key={projectkey_for_verification}
+
+//address
+Seed=
+Private=
+Public=
+Team_Operations=
+Advisors=
+Play_to_Earn=
+Staking=
+Treasury=
