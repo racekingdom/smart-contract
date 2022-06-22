@@ -4,8 +4,9 @@ Deployer_Primary_key={private_key}
 Provider=wss://rinkeby.infura.io/ws/v3/{projectId}
 
 Etherscan_Key={projectkey_for_verification}
+Bscscan_Key={projectkey_for_verification}
 
-//address
+//constructor arguments
 Seed=
 Private=
 Public=

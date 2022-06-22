@@ -1,9 +1,6 @@
 const RaceKingdom = artifacts.require('./RaceKingdom');
 const RKVesting = artifacts.require('./RKVesting');
-const path = require('path');
 require('dotenv').config();
-const filePath = path.join(__dirname, '../.env');
-require('dotenv').config({ path: filePath });
 
 module.exports = async function (deployer) {
 

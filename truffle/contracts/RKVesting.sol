@@ -42,6 +42,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
 
     event Released(uint256 amount);
     event Revoked();
+    event Withdraw(uint256 amount);
 
     /**
     * @dev Reverts if no vesting schedule matches the passed identifier.
@@ -69,10 +70,6 @@ contract RKVesting is Ownable, ReentrancyGuard{
         _token = IERC20(token_);
     }
 
-    receive() external payable {}
-
-    fallback() external payable {}
-
     /**
     * @dev Returns the number of vesting schedules associated to a beneficiary.
     * @return the number of vesting schedules
@@ -92,7 +89,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
     external
     view
     returns(bytes32){
-        require(index < getVestingSchedulesCount(), "TokenVesting: index out of bounds");
+        require(index < getVestingSchedulesCount(), "RKVesting: index out of bounds");
         return vestingSchedulesIds[index];
     }
 
@@ -150,13 +147,15 @@ contract RKVesting is Ownable, ReentrancyGuard{
     )
         public
         onlyOwner{
+        require(_beneficiary != address(0x0),"RKVesting: beneficiary can't be zero address");
         require(
             this.getWithdrawableAmount() >= _amount,
-            "TokenVesting: cannot create vesting schedule because not sufficient tokens"
+            "RKVesting: cannot create vesting schedule because not sufficient tokens"
         );
-        require(_duration > 0, "TokenVesting: duration must be > 0");
-        require(_amount > 0, "TokenVesting: amount must be > 0");
-        require(_slicePeriodSeconds >= 1, "TokenVesting: slicePeriodSeconds must be >= 1");
+        require(_duration >= _cliff,"RKVesting: cliff can't be greater than vesting duration");
+        require(_duration > 0, "RKVesting: duration must be > 0");
+        require(_amount > 0, "RKVesting: amount must be > 0");
+        require(_slicePeriodSeconds >= 1, "RKVesting: slicePeriodSeconds must be >= 1");
         bytes32 vestingScheduleId = this.computeNextVestingScheduleIdForHolder(_beneficiary);
         uint256 cliff = _start + _cliff;
         vestingSchedules[vestingScheduleId] = VestingSchedule(
@@ -182,11 +181,11 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @param vestingScheduleId the vesting schedule identifier
     */
     function revoke(bytes32 vestingScheduleId)
-        public
+        external
         onlyOwner
         onlyIfVestingScheduleNotRevoked(vestingScheduleId){
         VestingSchedule storage vestingSchedule = vestingSchedules[vestingScheduleId];
-        require(vestingSchedule.revocable == true, "TokenVesting: vesting is not revocable");
+        require(vestingSchedule.revocable == true, "RKVesting: vesting is not revocable");
         uint256 vestedAmount = _computeReleasableAmount(vestingSchedule);
         if(vestedAmount > 0){
             release(vestingScheduleId, vestedAmount);
@@ -194,6 +193,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
         uint256 unreleased = vestingSchedule.amountTotal - vestingSchedule.released;
         vestingSchedulesTotalAmount = vestingSchedulesTotalAmount - unreleased;
         vestingSchedule.revoked = true;
+        emit Revoked();
     }
 
     /**
@@ -201,10 +201,11 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @param amount the amount to withdraw
     */
     function withdraw(uint256 amount)
-        public
+        external
         onlyOwner{
-        require(this.getWithdrawableAmount() >= amount, "TokenVesting: not enough withdrawable funds");
+        require(this.getWithdrawableAmount() >= amount, "RKVesting: not enough withdrawable funds");
         _token.safeTransfer(owner(), amount);
+        emit Withdraw(amount);
     }
 
     /**
@@ -224,14 +225,15 @@ contract RKVesting is Ownable, ReentrancyGuard{
         bool isOwner = msg.sender == owner();
         require(
             isBeneficiary || isOwner,
-            "TokenVesting: only beneficiary and owner can release vested tokens"
+            "RKVesting: only beneficiary and owner can release vested tokens"
         );
         uint256 vestedAmount = _computeReleasableAmount(vestingSchedule);
-        require(vestedAmount >= amount, "TokenVesting: cannot release tokens, not enough vested tokens");
+        require(vestedAmount >= amount, "RKVesting: cannot release tokens, not enough vested tokens");
         vestingSchedule.released = vestingSchedule.released + amount;
-        address payable beneficiaryPayable = payable(vestingSchedule.beneficiary);
+        address beneficiaryPayable = vestingSchedule.beneficiary;
         vestingSchedulesTotalAmount = vestingSchedulesTotalAmount - amount;
         _token.safeTransfer(beneficiaryPayable, amount);
+        emit Released(amount);
     }
 
     /**
@@ -250,7 +252,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @return the vested amount
     */
     function computeReleasableAmount(bytes32 vestingScheduleId)
-        public
+        external
         onlyIfVestingScheduleNotRevoked(vestingScheduleId)
         view
         returns(uint256){
@@ -274,7 +276,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @return the amount of tokens
     */
     function getWithdrawableAmount()
-        public
+        external
         view
         returns(uint256){
         return _token.balanceOf(address(this)) - vestingSchedulesTotalAmount;
@@ -284,7 +286,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @dev Computes the next vesting schedule identifier for a given holder address.
     */
     function computeNextVestingScheduleIdForHolder(address holder)
-        public
+        external
         view
         returns(bytes32){
         return computeVestingScheduleIdForAddressAndIndex(holder, holdersVestingCount[holder]);
@@ -294,7 +296,7 @@ contract RKVesting is Ownable, ReentrancyGuard{
     * @dev Returns the last vesting schedule for a given holder address.
     */
     function getLastVestingScheduleForHolder(address holder)
-        public
+        external
         view
         returns(VestingSchedule memory){
         return vestingSchedules[computeVestingScheduleIdForAddressAndIndex(holder, holdersVestingCount[holder] - 1)];
